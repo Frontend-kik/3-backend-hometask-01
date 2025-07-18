@@ -1,25 +1,45 @@
-const http = require("http");
-// подключаем express. server вынесен в отдельный файл
 const express = require("express");
 const chalk = require("chalk");
-const fs = require("fs/promises");
 const path = require("path");
-const { addNote } = require("./notes.controller");
+const { addNote, getNotes, removeNote } = require("./notes.controller");
 
 const port = 3000;
-const basePath = path.join(__dirname, "pages");
-// вызываем функцию экспресс
 const app = express();
 
-app.use(express.urlencoded({}));
+app.set("view engine", "ejs");
+app.set("views", "pages");
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(basePath, "index.html"));
+app.use(express.static(path.resolve(__dirname, "public")));
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+
+app.get("/", async (req, res) => {
+  res.render("index", {
+    title: "Express  App",
+    notes: await getNotes(),
+    created: false,
+  });
 });
 
 app.post("/", async (req, res) => {
   await addNote(req.body.title);
-  res.sendFile(path.join(basePath, "index.html"));
+  res.render("index", {
+    title: "Express  App",
+    notes: await getNotes(),
+    created: true,
+  });
+});
+
+app.delete("/:id", async (req, res) => {
+  await removeNote(req.params.id);
+  res.render("index", {
+    title: "Express App",
+    notes: await getNotes(),
+    created: false,
+  });
 });
 
 app.listen(port, () => {
