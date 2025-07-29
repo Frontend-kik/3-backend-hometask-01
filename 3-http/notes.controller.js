@@ -1,55 +1,31 @@
-const fs = require("fs/promises");
-const path = require("path");
 const chalk = require("chalk");
-
-const notesPath = path.join(__dirname, "./db.json");
+const Note = require("./models/Note");
 
 async function addNote(title) {
-  const notes = await getNotes();
-  const note = {
-    title,
-    id: Date.now().toString(),
-  };
-  notes.push(note);
+  await Note.create({ title: title });
 
-  await fs.writeFile(notesPath, JSON.stringify(notes));
-  console.log(chalk.green("note was added"));
+  console.log(chalk.bgGreen("note was added"));
 }
 
 async function getNotes() {
-  const notes = await fs.readFile(notesPath, { encoding: "utf-8" });
-  return Array.isArray(JSON.parse(notes)) ? JSON.parse(notes) : [];
+  const notes = await Note.find();
+
+  return notes;
 }
 
-async function printNotes() {
-  const notes = await getNotes();
-
-  console.log(chalk.bgBlue("Here is the list of notes"));
-  if (notes.length === 0) {
-    console.log(chalk.bgYellow("No notes found."));
-  }
-  notes.forEach((note) => {
-    console.log(chalk.blue(`${note.title} ${note.id}`));
-  });
-}
 async function removeNote(id) {
-  const notes = await getNotes();
-  const index = notes.findIndex((note) => note.id !== id);
+  await Note.deleteOne({ _id: id });
+  console.log(chalk.red(`Note with id="${id}" has been removed`));
+}
 
-  if (index !== -1) {
-    console.log(`Заметка с id ${id} не найдена `);
-    return false;
-  }
-  notes.splice(index, 1); // удалить по индексу
-  await fs.writeFile(notesPath, JSON.stringify(notes, null, 2));
-  console.log(chalk.green(`✅ Заметка с id ${id} удалена`));
-
-  return true;
+async function updateNote(noteData) {
+  await Note.updateOne({ _id: noteData.id }, { title: noteData.title });
+  console.log(chalk.bgGreen(`Note with id="${noteData.id}" has been updated`));
 }
 
 module.exports = {
   addNote,
   getNotes,
-  printNotes,
   removeNote,
+  updateNote,
 };
